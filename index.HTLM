@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Malla Interactiva – Comunicación y Marketing (UPC)</title>
+<style>
+  :root{
+    --bg:#0b0c10;        /* fondo oscuro elegante */
+    --panel:#111319;     /* paneles */
+    --card:#171a23;      /* tarjetas */
+    --muted:#a7b0c0;     /* texto secundario */
+    --text:#e7ecf3;      /* texto principal */
+    --accent:#8ec5ff;    /* acento */
+    --ok:#22c55e;        /* aprobado */
+    --warn:#fbbf24;      /* disponible */
+    --lock:#ef4444;      /* bloqueado */
+    --chip:#243044;      /* chip */
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#0b0c10,#0e1016 60%,#0b0c10);color:var(--text)}
+  header{position:sticky;top:0;z-index:10;background:rgba(11,12,16,.85);backdrop-filter:blur(6px);border-bottom:1px solid #1f2430}
+  .wrap{max-width:1200px;margin:0 auto;padding:16px 20px}
+  h1{font-size:20px;margin:0 0 8px}
+  .stats{display:flex;gap:10px;flex-wrap:wrap}
+  .stat{background:var(--panel);border:1px solid #1e2330;border-radius:14px;padding:10px 12px;display:flex;gap:8px;align-items:center}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .ok{background:var(--ok)}
+  .avail{background:var(--warn)}
+  .locked{background:var(--lock)}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-top:8px}
+  button,select{background:#1a1f2b;color:var(--text);border:1px solid #283144;border-radius:10px;padding:8px 10px;cursor:pointer}
+  button:hover{border-color:#3a4a66}
+  main{padding:22px 20px}
+  .grid{max-width:1200px;margin:0 auto;display:grid;gap:16px;grid-template-columns:repeat(5,1fr)}
+  @media (max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:680px){.grid{grid-template-columns:repeat(2,1fr)}}
+  .col{background:var(--panel);border:1px solid #1f2430;border-radius:18px;overflow:hidden}
+  .col h2{margin:0;padding:12px 14px;border-bottom:1px solid #1f2430;font-size:15px;color:var(--muted)}
+  .list{padding:12px;display:flex;flex-direction:column;gap:10px}
+  .card{position:relative;background:var(--card);border:1px solid #22283a;border-radius:14px;padding:10px;cursor:pointer;transition:transform .06s ease,border-color .2s ease}
+  .card:hover{transform:translateY(-1px);border-color:#2b3650}
+  .course-title{font-weight:600;font-size:14px;line-height:1.25}
+  .course-code{font-size:11px;color:var(--muted);margin-top:2px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .chip{font-size:10px;background:var(--chip);color:#cfe3ff;border:1px solid #2e3c55;padding:2px 6px;border-radius:999px}
+  .state{position:absolute;top:8px;right:8px;font-size:10px;padding:2px 6px;border-radius:999px;border:1px solid #2b2f3d}
+  .state.approved{background:rgba(34,197,94,.15);color:#86efac;border-color:rgba(34,197,94,.35)}
+  .state.available{background:rgba(251,191,36,.12);color:#fde68a;border-color:rgba(251,191,36,.35)}
+  .state.locked{background:rgba(239,68,68,.12);color:#fca5a5;border-color:rgba(239,68,68,.35)}
+  /* Tooltip */
+  .tooltip{position:absolute;inset:auto auto 100% 0;transform:translateY(-6px);background:#10131b;border:1px solid #2a3143;color:#dbe7ff;font-size:12px;border-radius:10px;padding:8px;min-width:220px;box-shadow:0 8px 20px rgba(0,0,0,.35);display:none;z-index:5}
+  .card.show-tip .tooltip{display:block}
+  .tooltip b{color:#9dd1ff}
+  .legend{margin-top:8px;font-size:12px;color:var(--muted)}
+  .legend .i{display:inline-flex;gap:6px;align-items:center;margin-right:12px}
+  .legend .box{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:4px}
+  .box-ok{background:rgba(34,197,94,.25);border:1px solid rgba(34,197,94,.5)}
+  .box-av{background:rgba(251,191,36,.25);border:1px solid rgba(251,191,36,.5)}
+  .box-lo{background:rgba(239,68,68,.25);border:1px solid rgba(239,68,68,.5)}
+  .footer{max-width:1200px;margin:20px auto 50px;color:var(--muted);padding:0 20px}
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Malla Interactiva – Comunicación y Marketing (UPC)</h1>
+      <div class="stats" id="stats">
+        <div class="stat"><span class="dot ok"></span><span id="stat-apr">Aprobados: 0</span></div>
+        <div class="stat"><span class="dot avail"></span><span id="stat-dis">Disponibles: 0</span></div>
+        <div class="stat"><span class="dot locked"></span><span id="stat-bloq">Bloqueados: 0</span></div>
+        <div class="stat"><span>Créditos aprobados: <b id="stat-cr">0</b></span></div>
+        <div class="stat"><span>Total créditos: <b id="stat-ctr">200</b></span></div>
+      </div>
+      <div class="toolbar">
+        <button id="btn-reset">Reiniciar estados</button>
+        <button id="btn-export">Exportar progreso</button>
+        <input id="fileImport" type="file" accept="application/json" style="display:none" />
+        <button id="btn-import">Importar progreso</button>
+        <select id="filter">
+          <option value="all">Ver: Todos</option>
+          <option value="approved">Solo aprobados</option>
+          <option value="available">Solo disponibles</option>
+          <option value="locked">Solo bloqueados</option>
+        </select>
+      </div>
+      <div class="legend">
+        <span class="i"><span class="box box-ok"></span> Aprobado (click para desmarcar)</span>
+        <span class="i"><span class="box box-av"></span> Disponible (cumple requisitos)</span>
+        <span class="i"><span class="box box-lo"></span> Bloqueado (pasa el mouse para ver qué falta)</span>
+      </div>
+    </div>
+  </header>
+  <main>
+    <div class="grid" id="grid"></div>
+  </main>
+  <div class="footer">Tip: tus avances se guardan automáticamente en tu navegador (localStorage). Puedes exportar/importar tu progreso con los botones de arriba.</div>
+
+<script>
+/* ===============================
+   DATA – MALLA UPC (Jun 2024 / Rect. Dic 2024)
+   Campos: id, name, cycle, credits, prereqs (códigos o regla CREDITS>=N)
+   =============================== */
+const COURSES = [
+  // Ciclo 1
+  {id:"HU625", name:"Comprensión y Producción de Lenguaje I", cycle:1, credits:4, prereqs:[]},
+  {id:"HU06",  name:"Ecogeografía del Perú", cycle:1, credits:3, prereqs:[]},
+  {id:"HU548", name:"Ética y Ciudadanía", cycle:1, credits:2, prereqs:[]},
+  {id:"MA431", name:"Matemática Básica", cycle:1, credits:5, prereqs:[]},
+  {id:"HU193", name:"Taller de Creatividad", cycle:1, credits:3, prereqs:[]},
+  {id:"HU187", name:"Temas de Historia del Perú", cycle:1, credits:3, prereqs:[]},
+  {id:"CO16",  name:"Taller de Introducción a las Comunicaciones", cycle:1, credits:3, prereqs:[]},
+  // Ciclo 2
+  {id:"HU626", name:"Comprensión y Producción de Lenguaje II", cycle:2, credits:4, prereqs:["HU625"]},
+  {id:"HU66",  name:"Globalización: Enfoque Cultural y Económico", cycle:2, credits:3, prereqs:["HU06"]},
+  {id:"HU317", name:"Seminario Integrado de Investigación Académica", cycle:2, credits:3, prereqs:["HU625"]},
+  {id:"HU15",  name:"Antropología Social", cycle:2, credits:3, prereqs:[]},
+  {id:"AF103", name:"Fundamentos de las Finanzas", cycle:2, credits:4, prereqs:[]},
+  {id:"CM17", name:"Introducción al Marketing", cycle:2, credits:3, prereqs:[]},
+  {id:"CO14", name:"Procesos Psicológicos", cycle:2, credits:3, prereqs:[]},
+  // Ciclo 3
+  {id:"CO19", name:"Introducción a los Medios Digitales", cycle:3, credits:2, prereqs:["CO16"]},
+  {id:"PU66", name:"Comportamiento del Consumidor", cycle:3, credits:3, prereqs:["CM17"]},
+  {id:"CM65", name:"Informática para el Marketing", cycle:3, credits:3, prereqs:["MA431"]},
+  {id:"CO13", name:"Taller de Técnicas de Expresión Escrita", cycle:3, credits:3, prereqs:["HU626"]},
+  {id:"ELECT1", name:"Electivo", cycle:3, credits:3, prereqs:[]},
+  {id:"ELECT2", name:"Electivo", cycle:3, credits:3, prereqs:[]},
+  // Ciclo 4
+  {id:"CM28", name:"Costos y Presupuestos", cycle:4, credits:3, prereqs:["AF103"]},
+  {id:"MA470", name:"Estadística para Comunicadores", cycle:4, credits:4, prereqs:["CM65"]},
+  {id:"CM51", name:"Segmentación y Posicionamiento", cycle:4, credits:3, prereqs:["PU66","CM17"]},
+  {id:"HU19", name:"Sociología de la Comunicación", cycle:4, credits:3, prereqs:["CREDITS>=41"]},
+  {id:"CO22", name:"Taller de Diseño Gráfico 1", cycle:4, credits:3, prereqs:["CO19"]},
+  {id:"ELECT3", name:"Electivo", cycle:4, credits:3, prereqs:[]},
+  {id:"ELECT4", name:"Electivo", cycle:4, credits:3, prereqs:[]},
+  // Ciclo 5
+  {id:"HU49", name:"Economía para la Gestión", cycle:5, credits:3, prereqs:["AF103"]},
+  {id:"CM29", name:"Canales de Distribución y Trade", cycle:5, credits:3, prereqs:["CM28","CM51"]},
+  {id:"IM02", name:"Estudios Cualitativos", cycle:5, credits:3, prereqs:["PU66","MA470"]},
+  {id:"CM66", name:"Marketing e Innovación de Producto", cycle:5, credits:3, prereqs:["CM28","CM51"]},
+  {id:"EF91", name:"Matemática Aplicada al Marketing", cycle:5, credits:3, prereqs:["CM28"]},
+  {id:"PU124", name:"Taller de Diseño Gráfico 2 (Publicidad)", cycle:5, credits:3, prereqs:["CO22"]},
+  // Ciclo 6
+  {id:"CM00", name:"Branding", cycle:6, credits:3, prereqs:["CM66"]},
+  {id:"CM67", name:"Category Management & Sales", cycle:6, credits:3, prereqs:["CM29","CM66"]},
+  {id:"IM86", name:"Estudio y Análisis de Bases de Datos", cycle:6, credits:3, prereqs:["MA470","IM02"]},
+  {id:"CM31", name:"Gestión Empresarial", cycle:6, credits:3, prereqs:["EF91"]},
+  {id:"CM22", name:"Marketing de Precios", cycle:6, credits:3, prereqs:["CM29","CM66"]},
+  {id:"CM87", name:"Marketing Tools", cycle:6, credits:3, prereqs:["EF91"]},
+  {id:"ELECT5", name:"Electivo", cycle:6, credits:3, prereqs:[]},
+  // Ciclo 7
+  {id:"CM33", name:"Business Intelligence", cycle:7, credits:3, prereqs:["IM86","CM87"]},
+  {id:"CM68", name:"Digital Marketing & Customer Centric", cycle:7, credits:3, prereqs:["CREDITS>=100"]},
+  {id:"CO07", name:"Legislación en Comunicaciones", cycle:7, credits:3, prereqs:["CREDITS>=100"]},
+  {id:"CM83", name:"Marketing & Strategy", cycle:7, credits:3, prereqs:["CM87","CM67","IM86","CM22"]},
+  {id:"CM88", name:"Media Revenue Strategy", cycle:7, credits:3, prereqs:["CM00"]},
+  {id:"ELECT6", name:"Electivo", cycle:7, credits:3, prereqs:[]},
+  // Ciclo 8
+  {id:"CM36", name:"Campañas Publicitarias", cycle:8, credits:3, prereqs:["CM00","CM88"]},
+  {id:"PU33", name:"Comunicación y Desarrollo", cycle:8, credits:3, prereqs:["HU19"]},
+  {id:"CM70", name:"Digital Strategy & E-tools", cycle:8, credits:3, prereqs:["CM68"]},
+  {id:"CM84", name:"Marketing Metrics", cycle:8, credits:3, prereqs:["CM83","CM87"]},
+  {id:"CM03", name:"Marketing Relacional – CRM", cycle:8, credits:3, prereqs:["CM33"]},
+  {id:"CM58", name:"Seminario Avanzado de Investigación", cycle:8, credits:4, prereqs:["CM83"]},
+  {id:"ELECT7", name:"Electivo", cycle:8, credits:3, prereqs:[]},
+  // Ciclo 9
+  {id:"CM89", name:"Digital Project Design", cycle:9, credits:3, prereqs:["CM70"]},
+  {id:"CM79", name:"Diseño de Plan de Marketing", cycle:9, credits:3, prereqs:["CM84"]},
+  {id:"CM75", name:"Investigación Avanzada 1 en Marketing", cycle:9, credits:4, prereqs:["CM58"]},
+  {id:"CM37", name:"Marketing B2B", cycle:9, credits:3, prereqs:["CM33","CM83"]},
+  {id:"CM71", name:"Marketing e Innovación de Servicios", cycle:9, credits:3, prereqs:["CM84"]},
+  {id:"ELECT8", name:"Electivo", cycle:9, credits:3, prereqs:[]},
+  // Ciclo 10
+  {id:"CM74", name:"Investigación Avanzada 2 en Marketing", cycle:10, credits:3, prereqs:["CM75"]},
+  {id:"CO09", name:"Ética Profesional", cycle:10, credits:3, prereqs:["CO07"]},
+  {id:"CM85", name:"Marketing Decisions Making", cycle:10, credits:3, prereqs:["CM79"]},
+  {id:"IM77", name:"Responsabilidad y Sostenibilidad Ambiental", cycle:10, credits:3, prereqs:["PU33"]},
+  {id:"ELECT9", name:"Electivo", cycle:10, credits:3, prereqs:[]},
+  {id:"ELECT10", name:"Electivo", cycle:10, credits:3, prereqs:[]},
+];
+
+/* ===== Helpers ===== */
+const byId = id => COURSES.find(c=>c.id===id);
+function listMissingPrereqs(course, approvedSet, approvedCredits){
+  const missing = [];
+  for(const p of (course.prereqs||[])){
+    if(p.startsWith('CREDITS>=')){
+      const need = parseInt(p.split('>=')[1],10);
+      if(approvedCredits < need) missing.push(`Créditos aprobados ≥ ${need}`);
+    }else{
+      if(!approvedSet.has(p)){
+        const nm = byId(p)?.name || p;
+        missing.push(`${p} – ${nm}`);
+      }
+    }
+  }
+  return missing;
+}
+
+function computeApprovedCredits(approvedSet){
+  let sum=0; for(const c of COURSES){ if(approvedSet.has(c.id)) sum+=c.credits||0; }
+  return sum;
+}
+
+/* ===== State (localStorage) ===== */
+const LS_KEY = 'malla_upc_cm_v1';
+function loadState(){
+  try{ const raw = localStorage.getItem(LS_KEY); if(!raw) return new Set(); return new Set(JSON.parse(raw)); }catch(e){ return new Set(); }
+}
+function saveState(approvedSet){ localStorage.setItem(LS_KEY, JSON.stringify([...approvedSet])); }
+
+/* ===== Rendering ===== */
+const grid = document.getElementById('grid');
+let approved = loadState();
+
+function getStatus(course, approvedSet, approvedCredits){
+  const missing = listMissingPrereqs(course, approvedSet, approvedCredits);
+  if(approvedSet.has(course.id)) return {status:'approved', missing};
+  if(missing.length===0) return {status:'available', missing};
+  return {status:'locked', missing};
+}
+
+function render(){
+  grid.innerHTML = '';
+  const filter = document.getElementById('filter').value;
+  const approvedCredits = computeApprovedCredits(approved);
+  // Build columns 1..10
+  for(let cyc=1; cyc<=10; cyc++){
+    const col = document.createElement('div');
+    col.className='col';
+    col.innerHTML = `<h2>Ciclo ${cyc}</h2><div class="list"></div>`;
+    const list = col.querySelector('.list');
+    const courses = COURSES.filter(c=>c.cycle===cyc).sort((a,b)=>a.name.localeCompare(b.name));
+    for(const c of courses){
+      const {status, missing} = getStatus(c, approved, approvedCredits);
+      if(filter!=='all' && status!==filter) continue;
+      const card = document.createElement('div');
+      card.className = `card ${status}`;
+      card.dataset.id = c.id;
+      card.innerHTML = `
+        <div class="state ${status}">${status==='approved'?'Aprobado':status==='available'?'Disponible':'Bloqueado'}</div>
+        <div class="course-title">${c.name}</div>
+        <div class="course-code">${c.id} • ${c.credits??0} créditos</div>
+        <div class="chips">${(c.prereqs||[]).map(p=>`<span class="chip">${p.replace('CREDITS>=','Créditos ≥ ')}</span>`).join('')||'<span class="chip">Sin requisitos</span>'}</div>
+        <div class="tooltip">${missing.length?`<b>Faltan requisitos:</b><br>${missing.map(m=>`• ${m}`).join('<br>')}`:'Listo para cursar'}</div>
+      `;
+      // Click behavior
+      card.addEventListener('click', (e)=>{
+        const id = card.dataset.id;
+        const st = getStatus(c, approved, computeApprovedCredits(approved));
+        if(st.status==='locked'){
+          // toggle tooltip visibility on locked
+          card.classList.toggle('show-tip');
+          return;
+        }
+        if(approved.has(id)) approved.delete(id); else approved.add(id);
+        saveState(approved); render();
+      });
+      // Hover to show tooltip only if locked
+      card.addEventListener('mouseenter', ()=>{
+        if(card.classList.contains('locked')) card.classList.add('show-tip');
+      });
+      card.addEventListener('mouseleave', ()=> card.classList.remove('show-tip'));
+      list.appendChild(card);
+    }
+    grid.appendChild(col);
+  }
+  // Update stats
+  let a=0,d=0,b=0; const apcr = computeApprovedCredits(approved);
+  for(const c of COURSES){
+    const st = getStatus(c, approved, apcr).status;
+    if(st==='approved') a++; else if(st==='available') d++; else b++;
+  }
+  document.getElementById('stat-apr').textContent = `Aprobados: ${a}`;
+  document.getElementById('stat-dis').textContent = `Disponibles: ${d}`;
+  document.getElementById('stat-bloq').textContent = `Bloqueados: ${b}`;
+  document.getElementById('stat-cr').textContent = apcr;
+}
+
+// Controls
+ document.getElementById('btn-reset').addEventListener('click',()=>{
+   if(confirm('¿Seguro que deseas reiniciar todos los estados?')){ approved=new Set(); saveState(approved); render(); }
+ });
+ document.getElementById('btn-export').addEventListener('click',()=>{
+   const blob = new Blob([JSON.stringify([...approved], null, 2)], {type:'application/json'});
+   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'progreso_malla_upc.json'; a.click();
+ });
+ document.getElementById('btn-import').addEventListener('click',()=> document.getElementById('fileImport').click());
+ document.getElementById('fileImport').addEventListener('change',(e)=>{
+   const f = e.target.files[0]; if(!f) return; const r=new FileReader();
+   r.onload=()=>{ try{ approved = new Set(JSON.parse(r.result)); saveState(approved); render(); }catch(err){ alert('Archivo no válido'); } };
+   r.readAsText(f);
+ });
+ document.getElementById('filter').addEventListener('change', render);
+
+// First render
+render();
+</script>
+</body>
+</html>
